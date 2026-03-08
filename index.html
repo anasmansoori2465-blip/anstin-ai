@@ -6,17 +6,17 @@
 <style>
 
 body{
-font-family: Arial;
-background:#0f172a;
-color:white;
 margin:0;
+font-family:Arial;
+background:#343541;
+color:white;
 display:flex;
 flex-direction:column;
 height:100vh;
 }
 
 header{
-background:#1e293b;
+background:#202123;
 padding:15px;
 text-align:center;
 font-size:20px;
@@ -26,45 +26,48 @@ font-size:20px;
 flex:1;
 overflow:auto;
 padding:15px;
+display:flex;
+flex-direction:column;
 }
 
 .message{
-margin:10px 0;
+padding:12px;
+border-radius:10px;
+margin:6px 0;
+max-width:80%;
 }
 
 .user{
-color:#38bdf8;
+background:#2563eb;
+align-self:flex-end;
 }
 
 .ai{
-color:#22c55e;
+background:#444654;
+align-self:flex-start;
 }
 
 #inputArea{
 display:flex;
 padding:10px;
-background:#1e293b;
+background:#202123;
 }
 
 input{
 flex:1;
-padding:10px;
+padding:12px;
 border:none;
 border-radius:6px;
 }
 
 button{
 margin-left:10px;
-padding:10px 15px;
+padding:12px;
 border:none;
-background:#3b82f6;
-color:white;
 border-radius:6px;
+background:#19c37d;
+color:white;
 cursor:pointer;
-}
-
-button:hover{
-background:#2563eb;
 }
 
 </style>
@@ -73,14 +76,12 @@ background:#2563eb;
 
 <body>
 
-<header>
-Anstin AI
-</header>
+<header>Anstin AI</header>
 
 <div id="chat"></div>
 
 <div id="inputArea">
-<input id="userInput" placeholder="Ask Anstin AI...">
+<input id="prompt" placeholder="Message Anstin AI...">
 <button onclick="send()">Send</button>
 </div>
 
@@ -90,17 +91,23 @@ const API_KEY = "AIzaSyBSpaPl56-cMTHAx9WpQT_V0YBNS58P374";
 
 async function send(){
 
-let input = document.getElementById("userInput").value;
+let input = document.getElementById("prompt").value;
 
 if(!input) return;
 
 let chat = document.getElementById("chat");
 
-chat.innerHTML += `<div class="message user"><b>You:</b> ${input}</div>`;
+let userMsg = document.createElement("div");
+userMsg.className="message user";
+userMsg.innerText=input;
+chat.appendChild(userMsg);
 
-document.getElementById("userInput").value="";
+document.getElementById("prompt").value="";
 
-chat.innerHTML += `<div class="message ai">Anstin AI is thinking...</div>`;
+let loading = document.createElement("div");
+loading.className="message ai";
+loading.innerText="Thinking...";
+chat.appendChild(loading);
 
 chat.scrollTop = chat.scrollHeight;
 
@@ -116,7 +123,9 @@ headers:{
 body:JSON.stringify({
 contents:[
 {
-parts:[{text:input}]
+parts:[
+{text:input}
+]
 }
 ]
 })
@@ -125,13 +134,19 @@ parts:[{text:input}]
 
 let data = await response.json();
 
-let reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't respond.";
+loading.remove();
 
-chat.innerHTML += `<div class="message ai"><b>Anstin AI:</b> ${reply}</div>`;
+let reply = data?.candidates?.[0]?.content?.parts?.[0]?.text || "No response";
 
-}catch(error){
+let aiMsg = document.createElement("div");
+aiMsg.className="message ai";
+aiMsg.innerText=reply;
 
-chat.innerHTML += `<div class="message ai">Error connecting to AI.</div>`;
+chat.appendChild(aiMsg);
+
+}catch(err){
+
+loading.innerText="Error connecting to AI";
 
 }
 
