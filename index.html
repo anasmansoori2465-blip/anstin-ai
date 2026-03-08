@@ -4,55 +4,110 @@
 <title>Anstin AI</title>
 
 <style>
+
 body{
-font-family:Arial;
-background:#111827;
+font-family: Arial;
+background:#0f172a;
 color:white;
+margin:0;
+display:flex;
+flex-direction:column;
+height:100vh;
+}
+
+header{
+background:#1e293b;
+padding:15px;
 text-align:center;
+font-size:20px;
 }
 
 #chat{
-width:80%;
-height:400px;
-border:1px solid white;
-margin:auto;
+flex:1;
 overflow:auto;
+padding:15px;
+}
+
+.message{
+margin:10px 0;
+}
+
+.user{
+color:#38bdf8;
+}
+
+.ai{
+color:#22c55e;
+}
+
+#inputArea{
+display:flex;
 padding:10px;
+background:#1e293b;
 }
 
 input{
-width:60%;
+flex:1;
 padding:10px;
+border:none;
+border-radius:6px;
 }
 
 button{
-padding:10px;
+margin-left:10px;
+padding:10px 15px;
+border:none;
+background:#3b82f6;
+color:white;
+border-radius:6px;
+cursor:pointer;
 }
+
+button:hover{
+background:#2563eb;
+}
+
 </style>
 
 </head>
 
 <body>
 
-<h1>Anstin AI</h1>
+<header>
+Anstin AI
+</header>
 
 <div id="chat"></div>
 
-<input id="userInput" placeholder="Ask something">
+<div id="inputArea">
+<input id="userInput" placeholder="Ask Anstin AI...">
 <button onclick="send()">Send</button>
+</div>
 
 <script>
 
+const API_KEY = "AIzaSyBSpaPl56-cMTHAx9WpQT_V0YBNS58P374";
+
 async function send(){
 
-let input=document.getElementById("userInput").value
+let input = document.getElementById("userInput").value;
 
-let chat=document.getElementById("chat")
+if(!input) return;
 
-chat.innerHTML+="<p><b>You:</b> "+input+"</p>"
+let chat = document.getElementById("chat");
 
-let response=await fetch(
-"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyBSpaPl56-cMTHAx9WpQT_V0YBNS58P374",
+chat.innerHTML += `<div class="message user"><b>You:</b> ${input}</div>`;
+
+document.getElementById("userInput").value="";
+
+chat.innerHTML += `<div class="message ai">Anstin AI is thinking...</div>`;
+
+chat.scrollTop = chat.scrollHeight;
+
+try{
+
+let response = await fetch(
+`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${API_KEY}`,
 {
 method:"POST",
 headers:{
@@ -61,23 +116,30 @@ headers:{
 body:JSON.stringify({
 contents:[
 {
-parts:[
-{text:input}
-]
+parts:[{text:input}]
 }
 ]
 })
-})
+}
+);
 
-let data=await response.json()
+let data = await response.json();
 
-let reply=data.candidates[0].content.parts[0].text
+let reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "Sorry, I couldn't respond.";
 
-chat.innerHTML+="<p><b>Anstin AI:</b> "+reply+"</p>"
+chat.innerHTML += `<div class="message ai"><b>Anstin AI:</b> ${reply}</div>`;
+
+}catch(error){
+
+chat.innerHTML += `<div class="message ai">Error connecting to AI.</div>`;
+
+}
+
+chat.scrollTop = chat.scrollHeight;
 
 }
 
 </script>
 
 </body>
-  </html>
+</html>
