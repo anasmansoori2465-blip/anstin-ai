@@ -108,6 +108,26 @@
         
         button:active { transform: scale(0.95); }
 
+        /* Settings Modal */
+        #settings-modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 10px;
+            width: 80%;
+            max-width: 400px;
+        }
+        .modal-content input { width: 100%; margin-bottom: 10px; }
+        .close-btn { background: #ff4444; color: white; margin-top: 10px; }
+
         /* Loading Spinner */
         .typing-indicator {
             font-style: italic;
@@ -136,44 +156,62 @@
         <button class="mic-btn" onclick="startVoice()">🎤</button>
         <input type="text" id="user-input" placeholder="Type a message..." onkeypress="handleEnter(event)">
         <button class="send-btn" onclick="sendMessage()">Send</button>
+        <button class="mic-btn" onclick="toggleSettings()">⚙️</button>
+    </div>
+
+    <!-- Settings Modal for API Keys -->
+    <div id="settings-modal">
+        <div class="modal-content">
+            <h3>API Settings</h3>
+            <p style="font-size:0.8rem; color:#aaa;">Enter your free API keys here.</p>
+            <input type="password" id="groq-key" placeholder="Groq API Key (Required for Chat)">
+            <input type="password" id="hf-key" placeholder="Hugging Face API Key (For Images)">
+            <button class="send-btn" onclick="saveSettings()">Save & Close</button>
+            <button class="close-btn" onclick="toggleSettings()">Cancel</button>
+        </div>
     </div>
 
     <script>
         /* --- JAVASCRIPT: The Brain --- */
         
-        // ==========================================
-        // ⚠️ IMPORTANT: PASTE YOUR KEYS BELOW ⚠️
-        // ==========================================
-        
-        // 1. Paste your Groq API Key here (for Chat)
-        const GROQ_API_KEY = "PASTE_YOUR_GROQ_KEY_HERE"; 
-        
-        // 2. Paste your Hugging Face API Key here (for Images)
-        const HF_API_KEY = "PASTE_YOUR_HF_KEY_HERE"; 
-        
-        // ==========================================
-
+        // 1. Configuration
+        let groqApiKey = "";
+        let hfApiKey = "";
         let isSpeaking = false;
 
-        // System Prompt (Creator Awareness)
+        // 2. System Prompt (Creator Awareness)
         const systemPrompt = "You are Anstin AI. Your creator is Mr. Anas Mansoori from India, who is 17 years old. You are helpful, polite, and smart.";
 
-        // Handle Enter Key
+        // 3. Handle Enter Key
         function handleEnter(e) {
             if (e.key === 'Enter') sendMessage();
         }
 
-        // Add Message to UI
+        // 4. Toggle Settings
+        function toggleSettings() {
+            const modal = document.getElementById('settings-modal');
+            modal.style.display = modal.style.display === 'flex' ? 'none' : 'flex';
+        }
+
+        // 5. Save Keys
+        function saveSettings() {
+            groqApiKey = document.getElementById('groq-key').value;
+            hfApiKey = document.getElementById('hf-key').value;
+            toggleSettings();
+            alert("Settings Saved! Now you can chat.");
+        }
+
+        // 6. Add Message to UI
         function addMessage(text, sender) {
             const container = document.getElementById('chat-container');
             const div = document.createElement('div');
             div.className = `message ${sender}-message`;
-            div.innerHTML = text; 
+            div.innerHTML = text; // innerHTML allows images
             container.appendChild(div);
-            container.scrollTop = container.scrollHeight; 
+            container.scrollTop = container.scrollHeight; // Scroll to bottom
         }
 
-        // Main Send Function
+        // 7. Main Send Function
         async function sendMessage() {
             const inputField = document.getElementById('user-input');
             const text = inputField.value.trim();
@@ -195,10 +233,10 @@
             document.getElementById('typing').style.display = 'none';
         }
 
-        // Chat with Groq (Text)
+        // 8. Chat with Groq (Text)
         async function chatWithGroq(userText) {
-            if (GROQ_API_KEY === "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") {
-                addMessage("⚠️ Error: Please edit the code and add your Groq API Key.", 'ai');
+            if (!groqApiKey) {
+                addMessage("⚠️ Please go to settings (⚙️) and add your Groq API Key.", 'ai');
                 return;
             }
 
@@ -207,10 +245,10 @@
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
-                        "Authorization": `Bearer ${GROQ_API_KEY}`
+                        "Authorization": `Bearer ${groqApiKey}`
                     },
                     body: JSON.stringify({
-                        model: "llama3-8b-8192", 
+                        model: "llama3-8b-8192", // Free and fast model
                         messages: [
                             { role: "system", content: systemPrompt },
                             { role: "user", content: userText }
@@ -221,6 +259,8 @@
                 const data = await response.json();
                 const aiText = data.choices[0].message.content;
                 addMessage(aiText, 'ai');
+                
+                // Optional: Speak the answer
                 speakText(aiText);
 
             } catch (error) {
@@ -228,14 +268,16 @@
             }
         }
 
-        // Generate Image (Hugging Face)
+        // 9. Generate Image (Hugging Face)
         async function generateImage(prompt) {
-            if (HF_API_KEY === "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") {
-                addMessage("⚠️ Error: Please edit the code and add your Hugging Face API Key.", 'ai');
+            if (!hfApiKey) {
+                addMessage("⚠️ Please add your Hugging Face API Key in settings to generate images.", 'ai');
                 return;
             }
 
+            // Remove "draw" or "image" from prompt for the API
             const cleanPrompt = prompt.replace(/draw|image|generate/gi, "").trim();
+
             addMessage("🎨 Generating image for: " + cleanPrompt, 'ai');
 
             try {
@@ -244,7 +286,7 @@
                     {
                         method: "POST",
                         headers: {
-                            "Authorization": `Bearer ${HF_API_KEY}`,
+                            "Authorization": `Bearer ${hfApiKey}`,
                             "Content-Type": "application/json"
                         },
                         body: JSON.stringify({ inputs: cleanPrompt })
@@ -253,6 +295,7 @@
 
                 const blob = await response.blob();
                 const imageUrl = URL.createObjectURL(blob);
+                
                 addMessage(`<img src="${imageUrl}" alt="Generated Image" />`, 'ai');
 
             } catch (error) {
@@ -260,14 +303,14 @@
             }
         }
 
-        // Voice Input (Speech to Text)
+        // 10. Voice Input (Speech to Text)
         function startVoice() {
             if (!('webkitSpeechRecognition' in window)) {
                 alert("Sorry, your browser doesn't support voice input.");
                 return;
             }
             const recognition = new webkitSpeechRecognition();
-            recognition.lang = 'en-IN'; 
+            recognition.lang = 'en-IN'; // Indian English
             recognition.start();
 
             recognition.onresult = function(event) {
@@ -277,7 +320,7 @@
             };
         }
 
-        // Voice Output (Text to Speech)
+        // 11. Voice Output (Text to Speech)
         function speakText(text) {
             if ('speechSynthesis' in window) {
                 const utterance = new SpeechSynthesisUtterance(text);
@@ -286,4 +329,4 @@
         }
     </script>
 </body>
-  </html>
+    </html>
